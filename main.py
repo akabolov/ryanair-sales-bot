@@ -74,9 +74,7 @@ def format_flight(flight):
     origin = flight.originFull
     destination = flight.destinationFull
     when = flight.departureTime.strftime("%Y-%m-%d, %H:%M")
-    return (
-        f"Price: {price} / From: {origin} / Destination: {destination} / When: {when}"
-    )
+    return f"<b>Price:</b> {price} \n<b>From:</b> {origin} \n<b>Destination:</b> {destination} \n<b>When:</b> {when}"
 
 
 def get_chunks(lst, n):
@@ -96,7 +94,9 @@ def send_update_message(context: CallbackContext, code: str, user_id: int):
 
         for message in splitted_messages:
             result = "\n\n".join(message)
-            context.bot.send_message(chat_id=str(user_id), text=result)
+            context.bot.send_message(
+                chat_id=str(user_id), text=result, parse_mode=telegram.ParseMode.HTML
+            )
 
 
 def send_update_for_user_id(context: CallbackContext, user_id: int):
