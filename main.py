@@ -1,4 +1,3 @@
-import consts as keys
 from ryanair import Ryanair
 from telegram.ext import *
 import telegram
@@ -7,6 +6,9 @@ import airportsdata
 import datetime
 import math
 import pytz
+import os
+
+API_KEY = os.environ.get("TG_API_KEY")
 
 ryanair = Ryanair("USD")
 
@@ -144,7 +146,7 @@ def remove_menu_keyboard(context: CallbackContext):
 
 
 def main():
-    updater = Updater(keys.API_KEY, use_context=True)
+    updater = Updater(API_KEY, use_context=True)
     jq = updater.job_queue
     dp = updater.dispatcher
 
