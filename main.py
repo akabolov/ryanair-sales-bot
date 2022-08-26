@@ -17,27 +17,32 @@ airports_codes = list(airports.keys())
 
 def start_command(update, context):
     user_id = context._user_id_and_data[0]
-    update.message.reply_text("Type Airport code (KRK, etc.)")
+    update.message.reply_text(
+        "This bots provides a daily subscription to Ryanair sales. Just type Airport 'IATA' code as a message (without '/') to subscribe to departure point (KRK for Krakow, WMI for Warsaw Modlin etc.)"
+    )
     users[user_id] = {"airport_codes": [], "destinations": [], "should_update": True}
 
 
 def handle_add_airport_origin(update, context):
     airport_code = update.message.text.upper()
-    if airport_code in airports.keys():
-        user_id = context._user_id_and_data[0]
-        if user_id not in users.keys():
-            update.message.reply_text("Please run start command first.")
-        elif airports[airport_code]:
+    user_id = context._user_id_and_data[0]
+    if user_id not in users.keys():
+        update.message.reply_text("Please run start command first.")
+    if airport_code in airports.keys() and user_id in users.keys():
+        user_airport_subscriptions = users[user_id]["airport_codes"]
+        if airport_code in user_airport_subscriptions:
+            update.message.reply_text("Subscription to this airport already exists.")
+        elif airports[airport_code] and airport_code not in user_airport_subscriptions:
             users[user_id]["airport_codes"].append(airport_code)
-            update.message.reply_text("New airport successfully added.")
+            update.message.reply_text("New airport subscription successfully added.")
             send_update_for_user_id(context, user_id)
         else:
-            update.message.reply_text("Airport does not exist")
+            update.message.reply_text("Airport does not exist or not supported.")
             update.message.reply_text(
                 "You can check airport IATA codes here: https://www.nationsonline.org/oneworld/IATA_Codes/airport_code_list.htm"
             )
-    else:
-        update.message.reply_text("Please provide correct airport code.")
+    elif user_id in users.keys():
+        update.message.reply_text("Please provide valid airport code.")
         update.message.reply_text(
             "You can check airports here: https://www.nationsonline.org/oneworld/IATA_Codes/airport_code_list.htm"
         )
@@ -74,7 +79,7 @@ def format_flight(flight):
     origin = flight.originFull
     destination = flight.destinationFull
     when = flight.departureTime.strftime("%Y-%m-%d, %H:%M")
-    return f"<b>Price:</b> {price} \n<b>From:</b> {origin} \n<b>Destination:</b> {destination} \n<b>When:</b> {when}"
+    return f"<b>Price:</b> {price}$ \n<b>From:</b> {origin} \n<b>Destination:</b> {destination} \n<b>When:</b> {when}"
 
 
 def get_chunks(lst, n):
@@ -111,6 +116,33 @@ def send_update(context: CallbackContext):
                 send_update_message(context, code, user_id)
 
 
+def remove_command(update, context):
+    update.message.reply_text(
+        "Pick subscription to remove", reply_markup=remove_menu_keyboard(context)
+    )
+
+
+def remove_subscription(update, context):
+    code = update.callback_query.data
+    user_id = context._user_id_and_data[0]
+    if user_id in users.keys():
+        query = update.callback_query
+        query.answer()
+        users[user_id]["airport_codes"].remove(code)
+        message = f"Subscription removed: {code}"
+        query.edit_message_text(text=message)
+
+
+def remove_menu_keyboard(context: CallbackContext):
+    user_id = context._user_id_and_data[0]
+    keyboard = []
+
+    for code in users[user_id]["airport_codes"]:
+        keyboard.append([telegram.InlineKeyboardButton(code, callback_data=code)])
+
+    return telegram.InlineKeyboardMarkup(keyboard)
+
+
 def main():
     updater = Updater(keys.API_KEY, use_context=True)
     jq = updater.job_queue
@@ -120,6 +152,8 @@ def main():
     dp.add_handler(CommandHandler("get_subscriptions", get_subscriptions))
     dp.add_handler(CommandHandler("pause_updates", pause_updates))
     dp.add_handler(CommandHandler("start_updates", start_updates))
+    dp.add_handler(CommandHandler("remove_subscription", remove_command))
+    dp.add_handler(CallbackQueryHandler(remove_subscription))
     dp.add_handler(MessageHandler(Filters.text, handle_add_airport_origin))
 
     dp.add_error_handler(error)
