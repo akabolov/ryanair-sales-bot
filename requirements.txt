@@ -1,8 +1,8 @@
 airportsdata==20220824
-python_dateutil==2.8.2
-python_telegram_bot==13.13
+python-dateutil==2.8.2
+python-telegram-bot==13.13
 pytz==2022.1
 ryanair==1.1
-ryanair_py==1.0.2
+ryanair-py==1.0.2
 telegram==0.0.1
 pyyaml==6.0
